@@ -1,6 +1,17 @@
 Welcome to the dtw-python package
 =================================
 
+**Note: this is a modified fork.** It is based on `dtw-python
+<https://github.com/DynamicTimeWarping/dtw-python>`__ v1.7.4 by Toni
+Giorgino (GPL-3.0-or-later). The only functional change is a new
+``open_end_select`` option of ``dtw()``: with open-end alignments,
+``open_end_select="minima"`` (default) selects the alignment endpoint
+among local minima of the normalized cumulative cost (via
+``scipy.signal.find_peaks``), while ``"minimum"`` reproduces the
+original behavior (global minimum). All credit for the package goes to
+the original authors; modifications by Takumi Matsunaga
+(@Takumi-morimori).
+
 Comprehensive implementation of `Dynamic Time Warping algorithms
 <https://dynamictimewarping.github.io>`__.
 

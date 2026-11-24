@@ -37,6 +37,7 @@ from dtw._globalCostMatrix import _globalCostMatrix
 from dtw.window import *
 from dtw.dtwPlot import *
 
+import scipy.signal
 import scipy.spatial.distance
 
 
@@ -135,7 +136,9 @@ def dtw(x, y=None,
         keep_internals=False,
         distance_only=False,
         open_end=False,
-        open_begin=False):
+        open_begin=False,
+        open_end_select="minima",
+        ):
     """Compute Dynamic Time Warp and find optimal alignment between two time
 series.
 
@@ -209,6 +212,13 @@ window_type :
     "sakoechiba", "slantedband", or a function (see details).
 open_begin,open_end : 
     perform open-ended alignments
+open_end_select : 
+    endpoint selection strategy for open-end alignments:
+    "minimum" picks the global minimum of the last row of the
+    normalized cost matrix; "minima" (default) restricts the choice
+    to local minima of that row (detected via
+    scipy.signal.find_peaks), falling back to the global minimum
+    if no local minimum exists
 keep_internals : 
     preserve the cumulative cost matrix, inputs, and other
     internal structures
@@ -415,7 +425,29 @@ Asymmetric: visiting 1 is required twice
     if open_end:
         if norm == "NA":
             _error("Open-end alignments require normalizable step patterns")
-        gcm.jmin = numpy.nanargmin(lastcol)
+
+        if open_end_select == "minimum":
+            gcm.jmin = numpy.nanargmin(lastcol)
+
+        elif open_end_select == "minima":
+            valid = numpy.isfinite(lastcol)
+            idx_valid = numpy.flatnonzero(valid)
+            vals_valid = lastcol[valid]
+
+            if vals_valid.size == 0:
+                _error("No finite open-end candidates found")
+
+            minima_rel, _ = scipy.signal.find_peaks(-vals_valid)
+
+            if minima_rel.size == 0:
+                minima_rel = numpy.array([numpy.argmin(vals_valid)], dtype=int)
+
+            minima_idx = idx_valid[minima_rel]
+
+            gcm.jmin = int(minima_idx[numpy.argmin(lastcol[minima_idx])])
+
+        else:
+            _error("open_end_select must be one of: 'minimum', 'minima'")
 
     gcm.distance = gcm.costMatrix[-1, gcm.jmin]
 
